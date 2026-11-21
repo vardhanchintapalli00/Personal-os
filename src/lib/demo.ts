@@ -54,7 +54,7 @@ export async function seedDemoData(prisma: PrismaClient, userId: string, today: 
     habits.push(await prisma.habit.create({ data: { userId, name: h.name, icon: h.icon, type: h.type, targetPerWeek: 7 } }));
   }
   const habitOdds = [0.8, 0.7, 0.65, 0.6, 0.7, 0.5, 0.45, 0.6, 0.75, 0.55];
-  const habitLogs = [];
+  const habitLogs: { userId: string; habitId: string; date: string; done: boolean }[] = [];
   for (let n = 0; n < 35; n++) {
     habits.forEach((h, i) => {
       if (n === 0 && r() > 0.5) return; // today is still in progress
