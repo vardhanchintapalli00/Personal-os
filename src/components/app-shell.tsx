@@ -12,6 +12,7 @@ import { useUI } from '@/lib/store';
 import { buildNotifications, dueReminders } from '@/lib/notifications';
 import { nowTime } from '@/lib/dates';
 import { api } from '@/lib/api';
+import { precacheApp } from '@/lib/offline';
 import { ErrorState, PageSkeleton, Spinner, TONE_SOFT, type Tone } from './ui';
 import { QuickAdd } from './quick-add';
 
@@ -34,7 +35,7 @@ const isActive = (path: string, href: string) => (href === '/' ? path === '/' : 
 export function AppShell({ children }: { children: ReactNode }) {
   const path = usePathname();
   const router = useRouter();
-  const { snapshot: s, isLoading, isError, error, refetch, today } = useSnapshot();
+  const { snapshot: s, isLoading, error, refetch, today } = useSnapshot();
   const { setTheme, resolvedTheme } = useTheme();
   const { moreOpen, setMoreOpen, openQuick } = useUI();
   const now = useNow();
@@ -44,6 +45,17 @@ export function AppShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (s && !synced.current) { synced.current = true; if (s.user.theme && s.user.theme !== 'system') setTheme(s.user.theme); }
   }, [s, setTheme]);
+
+  // Once per session, save every page on the device so the whole app also opens offline.
+  const loaded = Boolean(s);
+  useEffect(() => {
+    if (!loaded) return;
+    const id = setTimeout(() => {
+      try { if (sessionStorage.getItem('lifeos-precached')) return; sessionStorage.setItem('lifeos-precached', '1'); } catch { /* ignore */ }
+      precacheApp(NAV.map((n) => n.href).concat('/onboarding'));
+    }, 2500);
+    return () => clearTimeout(id);
+  }, [loaded]);
 
   // First-time users go through onboarding.
   useEffect(() => {
@@ -97,10 +109,13 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       {/* Top bar */}
       <header className="sticky top-0 z-20 flex h-14 items-center justify-between gap-2 border-b border-border bg-background/80 px-4 backdrop-blur lg:px-8">
-        <Link href="/" className="flex items-center gap-2 lg:hidden">
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-study to-movie text-white"><Sparkles size={16} /></span>
-          <span className="font-bold">LifeOS</span>
-        </Link>
+        <div className="flex items-center gap-1 lg:hidden">
+          <button onClick={() => setMoreOpen(true)} aria-label="Open menu" className="grid h-9 w-9 place-items-center rounded-xl text-foreground transition hover:bg-muted"><Menu size={21} /></button>
+          <Link href="/" className="flex items-center gap-2">
+            <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-study to-movie text-white"><Sparkles size={16} /></span>
+            <span className="font-bold">LifeOS</span>
+          </Link>
+        </div>
         <p className="hidden text-sm text-muted-foreground lg:block">{NAV.find((n) => isActive(path, n.href))?.label}</p>
         <div className="flex items-center gap-1">
           <button onClick={() => openQuick('task')} className="mr-1 hidden items-center gap-1.5 rounded-xl bg-study px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:brightness-110 lg:flex"><Plus size={15} /> Quick add</button>
@@ -108,11 +123,12 @@ export function AppShell({ children }: { children: ReactNode }) {
             {resolvedTheme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
           </button>
           {s && <NotificationBell nowHm={nowTime(now)} />}
+          {s && <Link href="/profile" aria-label="Profile" className="ml-1 rounded-full ring-2 ring-transparent transition hover:ring-study/40"><Avatar name={s.user.name} image={s.user.image} size={32} /></Link>}
         </div>
       </header>
 
       <main className="mx-auto w-full max-w-6xl px-4 pb-28 pt-5 lg:px-8 lg:pb-12">
-        {isLoading ? <PageSkeleton /> : isError || !s ? <ErrorState message={(error as Error)?.message} retry={() => refetch()} /> : <div key={path} className="animate-fade-in">{children}</div>}
+        {isLoading ? <PageSkeleton /> : !s ? <ErrorState message={(error as Error)?.message} retry={() => refetch()} /> : <div key={path} className="animate-fade-in">{children}</div>}
       </main>
 
       {/* Mobile bottom navigation */}
@@ -129,32 +145,40 @@ export function AppShell({ children }: { children: ReactNode }) {
             );
           })}
         </ul>
-        <button onClick={() => setMoreOpen(true)} aria-label="More pages" className="absolute -top-5 right-4 grid h-11 w-11 place-items-center rounded-full bg-foreground text-background shadow-pop"><Menu size={20} /></button>
       </nav>
 
-      <MoreSheet open={moreOpen} onClose={() => setMoreOpen(false)} path={path} />
+      <MoreSheet open={moreOpen} onClose={() => setMoreOpen(false)} path={path} name={s?.user.name} email={s?.user.email} />
       <QuickAdd />
     </div>
   );
 }
 
-function MoreSheet({ open, onClose, path }: { open: boolean; onClose: () => void; path: string }) {
-  const extra = NAV.filter((n) => !MOBILE_MAIN.includes(n.href));
+function MoreSheet({ open, onClose, path, name, email }: { open: boolean; onClose: () => void; path: string; name?: string; email?: string }) {
   return (
     <AnimatePresence>
       {open && (
         <div className="fixed inset-0 z-[55] lg:hidden">
           <motion.div className="absolute inset-0 bg-black/50" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
-          <motion.div className="absolute inset-x-0 bottom-0 rounded-t-3xl bg-card p-5 pb-safe shadow-pop" initial={{ y: 200 }} animate={{ y: 0 }} exit={{ y: 200 }} transition={{ type: 'spring', stiffness: 320, damping: 32 }}>
-            <div className="mb-4 flex items-center justify-between"><h2 className="font-semibold">More</h2><button onClick={onClose} aria-label="Close" className="p-1 text-muted-foreground"><X size={20} /></button></div>
-            <div className="grid grid-cols-4 gap-3">
-              {extra.map((n) => (
-                <Link key={n.href} href={n.href} onClick={onClose} className={cn('flex flex-col items-center gap-2 rounded-2xl p-3 text-xs font-semibold', isActive(path, n.href) ? TONE_SOFT[n.tone] : 'bg-muted/60')}>
-                  <n.icon size={22} />{n.label}
+          <motion.aside className="absolute inset-y-0 left-0 flex w-72 max-w-[82%] flex-col bg-card p-4 pb-safe shadow-pop" initial={{ x: -320 }} animate={{ x: 0 }} exit={{ x: -320 }} transition={{ type: 'spring', stiffness: 340, damping: 34 }}>
+            <div className="mb-4 flex items-center justify-between">
+              <span className="flex items-center gap-2.5 text-lg font-bold"><span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-study to-movie text-white"><Sparkles size={18} /></span>LifeOS</span>
+              <button onClick={onClose} aria-label="Close menu" className="p-1 text-muted-foreground"><X size={20} /></button>
+            </div>
+            <nav className="flex-1 space-y-1 overflow-y-auto">
+              {NAV.map((n) => (
+                <Link key={n.href} href={n.href} onClick={onClose} className={cn('flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition', isActive(path, n.href) ? `${TONE_SOFT[n.tone]} font-semibold` : 'text-muted-foreground hover:bg-muted hover:text-foreground')}>
+                  <n.icon size={19} /> {n.label}
                 </Link>
               ))}
-            </div>
-          </motion.div>
+            </nav>
+            {name && (
+              <div className="mt-3 flex items-center gap-3 rounded-2xl bg-muted/70 p-3">
+                <Avatar name={name} />
+                <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{name}</p><p className="truncate text-[11px] text-muted-foreground">{email}</p></div>
+                <button aria-label="Sign out" onClick={() => signOut({ callbackUrl: '/login' })} className="rounded-lg p-1.5 text-muted-foreground hover:bg-card"><LogOut size={16} /></button>
+              </div>
+            )}
+          </motion.aside>
         </div>
       )}
     </AnimatePresence>

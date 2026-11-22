@@ -78,10 +78,10 @@ export function useCrud(resource: ResourceName) {
   };
 
   const create = useMutation({
-    mutationFn: (v: { data: Record<string, unknown> } & CrudOptions) => api<AnyRow>(`/api/${resource}`, { method: 'POST', json: v.data }),
+    mutationFn: (v: { data: Record<string, unknown>; tmpId: string } & CrudOptions) => api<AnyRow>(`/api/${resource}`, { method: 'POST', json: v.data, tmpId: v.tmpId }),
     onMutate: async (v) => {
       const ctx = await rollbackCtx();
-      patchSnapshot(qc, (s) => withList(s, [{ id: `${TEMP}${Date.now()}`, subtasks: [], ...v.data } as AnyRow, ...list(s)]));
+      patchSnapshot(qc, (s) => withList(s, [{ id: v.tmpId, subtasks: [], ...v.data } as AnyRow, ...list(s)]));
       return ctx;
     },
     onError,
@@ -114,7 +114,7 @@ export function useCrud(resource: ResourceName) {
   });
 
   return {
-    create: (data: Record<string, unknown>, o?: CrudOptions) => create.mutateAsync({ data, ...o }).catch(() => null),
+    create: (data: Record<string, unknown>, o?: CrudOptions) => create.mutateAsync({ data, tmpId: `${TEMP}${Date.now()}${Math.random().toString(36).slice(2, 7)}`, ...o }).catch(() => null),
     update: (id: string, data: Record<string, unknown>, o?: CrudOptions) => update.mutateAsync({ id, data, ...o }).catch(() => null),
     remove: (id: string, o?: CrudOptions) => remove.mutateAsync({ id, ...o }).catch(() => null),
     pending: create.isPending || update.isPending || remove.isPending,

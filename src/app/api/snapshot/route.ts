@@ -9,33 +9,31 @@ async function materializeRecurring(userId: string, today: string) {
   const parents = await prisma.transaction.findMany({
     where: { userId, recurrence: { in: ['weekly', 'monthly'] }, parentId: null },
   });
+  if (!parents.length) return;
+  const copies = await prisma.transaction.findMany({
+    where: { userId, parentId: { in: parents.map((p) => p.id) } },
+    select: { parentId: true, date: true },
+  });
+  const haveBy = new Map<string, Set<string>>();
+  for (const c of copies) {
+    if (!c.parentId) continue;
+    if (!haveBy.has(c.parentId)) haveBy.set(c.parentId, new Set());
+    haveBy.get(c.parentId)!.add(c.date);
+  }
+  const rows: { userId: string; type: string; amount: number; category: string; date: string; paymentMethod: string; notes: string | null; recurrence: string; parentId: string }[] = [];
   for (const p of parents) {
-    const copies = await prisma.transaction.findMany({ where: { userId, parentId: p.id }, select: { date: true } });
-    const have = new Set(copies.map((c) => c.date));
+    const have = haveBy.get(p.id) ?? new Set<string>();
     let cursor = p.date;
-    const toCreate: typeof parents = [];
     for (let i = 0; i < 60; i++) {
       const next = p.recurrence === 'weekly' ? addDays(cursor, 7) : addMonths(p.date, i + 1);
       cursor = next;
       if (next > today) break;
-      if (!have.has(next)) toCreate.push({ ...p, id: '', date: next });
-    }
-    if (toCreate.length) {
-      await prisma.transaction.createMany({
-        data: toCreate.map((t) => ({
-          userId,
-          type: t.type,
-          amount: t.amount,
-          category: t.category,
-          date: t.date,
-          paymentMethod: t.paymentMethod,
-          notes: t.notes,
-          recurrence: 'none',
-          parentId: p.id,
-        })),
-      });
+      if (!have.has(next)) {
+        rows.push({ userId, type: p.type, amount: p.amount, category: p.category, date: next, paymentMethod: p.paymentMethod, notes: p.notes, recurrence: 'none', parentId: p.id });
+      }
     }
   }
+  if (rows.length) await prisma.transaction.createMany({ data: rows });
 }
 
 /** Returns everything the app needs in one round trip. Overdue/missed state is derived on the client. */

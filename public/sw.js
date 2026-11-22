@@ -17,7 +17,7 @@ self.addEventListener('activate', (event) => {
 
 async function cacheFirst(req) {
   const cache = await caches.open(STATIC);
-  const hit = await cache.match(req);
+  const hit = await cache.match(req, { ignoreVary: true });
   if (hit) return hit;
   const res = await fetch(req);
   if (res.ok) cache.put(req, res.clone());
@@ -31,7 +31,8 @@ async function networkFirst(req, cacheName, fallbackToHome) {
     if (res.ok && !res.redirected) cache.put(req, res.clone());
     return res;
   } catch (err) {
-    const hit = (await cache.match(req)) || (fallbackToHome ? await cache.match('/') : undefined);
+    const opts = { ignoreSearch: true, ignoreVary: true };
+    const hit = (await cache.match(req, opts)) || (fallbackToHome ? await cache.match('/', opts) : undefined);
     if (hit) return hit;
     if (fallbackToHome) {
       return new Response(
