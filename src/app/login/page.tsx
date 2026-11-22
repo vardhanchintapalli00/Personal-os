@@ -1,22 +1,30 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Sparkles, Target, Wallet, Dumbbell, CheckSquare } from 'lucide-react';
 import { Button, Field, Input, Segmented, Alert } from '@/components/ui';
 import { api } from '@/lib/api';
+import { SNAPSHOT_KEY } from '@/lib/hooks';
+import { todayStr } from '@/lib/dates';
+import type { Snapshot } from '@/types';
 
 const GOOGLE = process.env.NEXT_PUBLIC_GOOGLE_ENABLED === 'true';
 
 export default function LoginPage() {
   const router = useRouter();
+  const qc = useQueryClient();
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+
+  // Signed-out device: forget any data saved for a previous user.
+  useEffect(() => { try { localStorage.removeItem('lifeos-cache-v1'); } catch { /* ignore */ } }, []);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,8 +37,9 @@ export default function LoginPage() {
       if (mode === 'signup') await api('/api/register', { method: 'POST', json: { name, email, password } });
       const res = await signIn('credentials', { email, password, redirect: false });
       if (res?.error) throw new Error('Incorrect email or password.');
+      // Load the dashboard data before moving on so the first screen appears instantly.
+      try { await qc.prefetchQuery({ queryKey: SNAPSHOT_KEY, queryFn: () => api<Snapshot>(`/api/snapshot?today=${todayStr()}`) }); } catch { /* the dashboard will retry */ }
       router.replace('/');
-      router.refresh();
     } catch (err) {
       setError((err as Error).message);
       setBusy(false);
@@ -68,7 +77,7 @@ export default function LoginPage() {
               <Input type="password" autoComplete={mode === 'signin' ? 'current-password' : 'new-password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
             </Field>
             {error && <Alert tone="danger">{error}</Alert>}
-            <Button type="submit" size="lg" className="w-full" loading={busy}>{mode === 'signin' ? 'Sign in' : 'Create account'}</Button>
+            <Button type="submit" size="lg" className="w-full" loading={busy}>{busy ? (mode === 'signin' ? 'Signing you in…' : 'Creating your account…') : mode === 'signin' ? 'Sign in' : 'Create account'}</Button>
           </form>
 
           {GOOGLE && (
