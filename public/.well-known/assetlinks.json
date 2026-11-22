@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "app.vercel.personalos",
+    "sha256_cert_fingerprints": ["31:D9:66:71:2C:92:CD:7E:12:EF:C3:5C:47:8D:84:67:0A:F4:8D:6A:37:0E:C3:92:86:C7:D1:94:FA:25:9D:92"]
+  }
+}]
