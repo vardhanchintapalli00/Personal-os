@@ -1,7 +1,7 @@
 /* LifeOS service worker: makes the app open and show saved data without internet. */
 const VERSION = 'v1';  // keep in sync with src/lib/offline.ts
 const STATIC = `lifeos-static-${VERSION}`;
-const PAGES = `lifeos-pages-${VERSION}`;
+const PAGES = 'lifeos-pages-v2'; // v2: the old v1 cache could hold raw page data and is deleted on activate
 
 self.addEventListener('install', () => self.skipWaiting());
 
@@ -29,31 +29,20 @@ const OFFLINE_PAGE = new Response(
   { headers: { 'Content-Type': 'text/html; charset=utf-8' } },
 );
 
+const isHtml = (res) => (res.headers.get('content-type') || '').includes('text/html');
+
 /** Pages: show the saved copy immediately (like a native app) and refresh it in the background for next time. */
 async function pageFast(event, req) {
   const cache = await caches.open(PAGES);
-  const opts = { ignoreSearch: true, ignoreVary: true };
+  const opts = { ignoreVary: true };
   const saved = await cache.match(req, opts);
   const refresh = fetch(req)
-    .then((res) => { if (res.ok && !res.redirected) cache.put(req, res.clone()); return res; })
+    .then((res) => { if (res.ok && !res.redirected && isHtml(res)) cache.put(req, res.clone()); return res; })
     .catch(() => null);
-  if (saved) { event.waitUntil(refresh); return saved; }
+  if (saved && isHtml(saved)) { event.waitUntil(refresh); return saved; }
   const res = await refresh;
   if (res) return res;
   return (await cache.match('/', opts)) || OFFLINE_PAGE.clone();
-}
-
-async function networkFirst(req) {
-  const cache = await caches.open(PAGES);
-  try {
-    const res = await fetch(req);
-    if (res.ok && !res.redirected) cache.put(req, res.clone());
-    return res;
-  } catch (err) {
-    const hit = await cache.match(req, { ignoreSearch: true, ignoreVary: true });
-    if (hit) return hit;
-    throw err;
-  }
 }
 
 self.addEventListener('fetch', (event) => {
@@ -70,9 +59,6 @@ self.addEventListener('fetch', (event) => {
   if (req.mode === 'navigate') {
     event.respondWith(pageFast(event, req));
     return;
-  }
-  if (url.searchParams.has('_rsc')) {
-    event.respondWith(networkFirst(req));
   }
 });
 
