@@ -21,6 +21,16 @@ export function useToday(): string {
   return today;
 }
 
+/** Clock that updates every `ms` milliseconds (cheap: use this instead of a 1-second clock in big components). */
+export function useTick(ms: number): Date {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), ms);
+    return () => clearInterval(id);
+  }, [ms]);
+  return now;
+}
+
 /** Live clock that ticks every second. */
 export function useNow(): Date {
   const [now, setNow] = useState(() => new Date());
@@ -36,7 +46,7 @@ export function useSnapshot() {
   const q = useQuery({
     queryKey: SNAPSHOT_KEY,
     queryFn: () => api<Snapshot>(`/api/snapshot?today=${todayStr()}`),
-    staleTime: 60_000,
+    staleTime: 5 * 60_000,
   });
   return { ...q, snapshot: q.data, today };
 }

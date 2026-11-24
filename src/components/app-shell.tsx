@@ -7,7 +7,7 @@ import { useTheme } from 'next-themes';
 import { AnimatePresence, motion } from 'framer-motion';
 import { BarChart3, Bell, CheckSquare, Clapperboard, Dumbbell, Home, LogOut, Menu, Moon, Plus, Sparkles, Sun, User, Utensils, Wallet, X, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useNow, useSnapshot } from '@/lib/hooks';
+import { useTick, useSnapshot } from '@/lib/hooks';
 import { useUI } from '@/lib/store';
 import { buildNotifications, dueReminders } from '@/lib/notifications';
 import { nowTime } from '@/lib/dates';
@@ -38,7 +38,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { snapshot: s, isLoading, error, refetch, today } = useSnapshot();
   const { setTheme, resolvedTheme } = useTheme();
   const { moreOpen, setMoreOpen, openQuick } = useUI();
-  const now = useNow();
+  const now = useTick(15_000);
   const synced = useRef(false);
 
   // Apply the saved theme preference once data arrives.
@@ -108,7 +108,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </aside>
 
       {/* Top bar */}
-      <header className="sticky top-0 z-20 flex h-14 items-center justify-between gap-2 border-b border-border bg-background/80 px-4 backdrop-blur lg:px-8">
+      <header className="sticky top-0 z-20 flex h-14 items-center justify-between gap-2 border-b border-border bg-background px-4 lg:bg-background/80 lg:px-8 lg:backdrop-blur">
         <div className="flex items-center gap-1 lg:hidden">
           <button onClick={() => setMoreOpen(true)} aria-label="Open menu" className="grid h-9 w-9 place-items-center rounded-xl text-foreground transition hover:bg-muted"><Menu size={21} /></button>
           <Link href="/" className="flex items-center gap-2">
@@ -132,7 +132,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </main>
 
       {/* Mobile bottom navigation */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card/95 px-2 pb-safe pt-1.5 backdrop-blur lg:hidden" aria-label="Main">
+      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card px-2 pb-safe pt-1.5 lg:hidden" aria-label="Main">
         <ul className="mx-auto grid max-w-md grid-cols-5">
           {NAV.filter((n) => MOBILE_MAIN.includes(n.href)).map((n) => {
             const active = isActive(path, n.href);

@@ -35,7 +35,7 @@ export function Providers({ children }: { children: ReactNode }) {
     () =>
       new QueryClient({
         defaultOptions: {
-          queries: { retry: 1, refetchOnWindowFocus: true, staleTime: 30_000, gcTime: 7 * 24 * 60 * 60 * 1000, networkMode: 'offlineFirst' },
+          queries: { retry: 1, refetchOnWindowFocus: false, staleTime: 30_000, gcTime: 7 * 24 * 60 * 60 * 1000, networkMode: 'offlineFirst' },
           mutations: { networkMode: 'always' },
         },
       }),
@@ -63,11 +63,11 @@ export function Providers({ children }: { children: ReactNode }) {
     };
   }, [client]);
 
-  // Hide the start-up splash (it stays at least ~1 second so it never just blinks).
+  // Hide the start-up splash (it stays at least ~0.6 seconds so it never just blinks).
   useEffect(() => {
     const el = document.getElementById('splash');
     if (!el) return;
-    const id = setTimeout(() => el.classList.add('hide'), Math.max(0, 1000 - performance.now()));
+    const id = setTimeout(() => el.classList.add('hide'), Math.max(0, 600 - performance.now()));
     return () => clearTimeout(id);
   }, []);
 

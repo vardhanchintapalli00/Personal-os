@@ -54,6 +54,8 @@ model User {
   budgets      Budget[]
   savingsGoals SavingsGoal[]
   reports      Report[]
+  pushSubscriptions PushSubscription[]
+  reminderLogs      ReminderLog[]
 }
 
 model Task {
@@ -280,4 +282,29 @@ model Report {
   updatedAt DateTime @updatedAt
 
   @@unique([userId, period, periodKey])
+}
+
+/// A phone/browser that has turned on push reminders.
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+/// Remembers which reminders were already sent so none is sent twice.
+model ReminderLog {
+  id     String   @id @default(cuid())
+  userId String
+  user   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  key    String
+  sentAt DateTime @default(now())
+
+  @@unique([userId, key])
+  @@index([sentAt])
 }

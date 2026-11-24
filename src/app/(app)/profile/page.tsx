@@ -9,6 +9,7 @@ import { Avatar } from '@/components/app-shell';
 import { BudgetEditor } from '@/components/budget-editor';
 import { useProfileUpdate, useSnapshot, SNAPSHOT_KEY } from '@/lib/hooks';
 import { api } from '@/lib/api';
+import { enablePush } from '@/lib/push';
 import { toast } from '@/lib/store';
 import { ACTIVITY_LEVELS, FITNESS_GOALS } from '@/lib/constants';
 import { downloadPdf } from '@/lib/export';
@@ -138,9 +139,17 @@ export default function ProfilePage() {
   };
 
   const enableBrowser = async () => {
-    if (typeof Notification === 'undefined') return toast.error('This browser does not support notifications.');
-    const p = await Notification.requestPermission();
-    if (p === 'granted') toast.success('Browser reminders enabled'); else toast.warning('Notifications are blocked in your browser settings.');
+    try {
+      const r = await enablePush();
+      if (r === 'ok') toast.success('Phone reminders are on. Tap "Send test reminder" to check.');
+      else if (r === 'denied') toast.warning('Notifications are blocked. Allow them in your phone settings for LifeOS.');
+      else if (r === 'no-server-key') toast.error('Reminders are not set up on the server yet.');
+      else toast.error('This device does not support push notifications.');
+    } catch (e) { toast.error((e as Error).message); }
+  };
+  const sendTest = async () => {
+    try { await api('/api/push/test', { method: 'POST' }); toast.success('Test reminder sent. Check your notifications.'); }
+    catch (e) { toast.error((e as Error).message); }
   };
 
   return (
@@ -205,7 +214,8 @@ export default function ProfilePage() {
                 <Toggle checked={notif(k)} label={l} onChange={(c) => profile.update({ notifications: { ...Object.fromEntries(['tasks', 'water', 'workout', 'budget', 'habits', 'food', 'sleep'].map((x) => [x, notif(x)])), [k]: c } }, 'Notification preference saved')} /></div>
             ))}
           </div>
-          <Button className="mt-3 w-full" variant="soft" onClick={enableBrowser}>Enable browser push reminders</Button>
+          <Button className="mt-3 w-full" variant="soft" onClick={enableBrowser}>Turn on phone reminders</Button>
+          <Button className="mt-2 w-full" variant="outline" onClick={sendTest}>Send test reminder</Button>
         </Section>
       </div>
 
