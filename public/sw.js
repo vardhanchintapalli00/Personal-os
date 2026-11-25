@@ -74,7 +74,7 @@ self.addEventListener('push', (event) => {
       tag: d.tag || undefined,
       renotify: Boolean(d.tag),
       icon: '/pwa-icon?size=192',
-      badge: '/pwa-icon?size=192',
+      badge: '/pwa-icon?badge=1',
       data: d,
       actions,
       requireInteraction: d.kind === 'task',
@@ -88,7 +88,7 @@ self.addEventListener('notificationclick', (event) => {
   const d = event.notification.data || {};
   event.notification.close();
   const tellApp = async () => { const all = await clients.matchAll({ type: 'window', includeUncontrolled: true }); all.forEach((c) => c.postMessage({ type: 'lifeos:refresh' })); };
-  const show = (title, body) => self.registration.showNotification(title, { body, tag: d.tag || undefined, icon: '/pwa-icon?size=192', badge: '/pwa-icon?size=192' });
+  const show = (title, body) => self.registration.showNotification(title, { body, tag: d.tag || undefined, icon: '/pwa-icon?size=192', badge: '/pwa-icon?badge=1' });
 
   event.waitUntil(
     (async () => {

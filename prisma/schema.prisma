@@ -188,6 +188,7 @@ model Workout {
   durationMin Int      @default(30)
   calories    Int?
   exercises   Json     @default("[]") // [{ name, sets, reps, weightKg }]
+  completed   Boolean  @default(true)
   notes       String?
   createdAt   DateTime @default(now())
 

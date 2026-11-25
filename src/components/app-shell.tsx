@@ -36,6 +36,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   const path = usePathname();
   const router = useRouter();
   const { snapshot: s, isLoading, error, refetch, today } = useSnapshot();
+  useEffect(() => {
+    if (!isLoading) { (window as unknown as { __lifeosReady?: boolean }).__lifeosReady = true; window.dispatchEvent(new Event('lifeos:ready')); }
+  }, [isLoading]);
   const { setTheme, resolvedTheme } = useTheme();
   const { moreOpen, setMoreOpen, openQuick } = useUI();
   const now = useTick(15_000);

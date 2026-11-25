@@ -67,8 +67,17 @@ export function Providers({ children }: { children: ReactNode }) {
   useEffect(() => {
     const el = document.getElementById('splash');
     if (!el) return;
-    const id = setTimeout(() => el.classList.add('hide'), Math.max(0, 600 - performance.now()));
-    return () => clearTimeout(id);
+    let hidden = false;
+    const hide = () => { if (!hidden) { hidden = true; el.classList.add('hide'); } };
+    // Wait for the app data (or 3 s at most) and show the logo for at least 0.8 s, then fade straight into the app.
+    let minDone = false;
+    const tryHide = () => { if (minDone && (window as unknown as { __lifeosReady?: boolean }).__lifeosReady) hide(); };
+    const min = setTimeout(() => { minDone = true; tryHide(); }, Math.max(0, 800 - performance.now()));
+    const max = setTimeout(hide, 3000);
+    const onReady = () => tryHide();
+    window.addEventListener('lifeos:ready', onReady);
+    if (location.pathname.startsWith('/login')) (window as unknown as { __lifeosReady?: boolean }).__lifeosReady = true;
+    return () => { clearTimeout(min); clearTimeout(max); window.removeEventListener('lifeos:ready', onReady); };
   }, []);
 
   // Send changes saved while offline as soon as the internet is back, then refresh the data.

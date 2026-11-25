@@ -62,8 +62,8 @@ export function buildNotifications(s: Snapshot, today: string, nowHm: string): A
   if (on(s, 'workout')) {
     const f = weeklyFitness(s, today);
     const done = workoutsOn(s, today).length > 0;
-    const yesterdayCount = s.workouts.filter((w) => diffDays(today, w.date) === 1).length;
-    const recent3 = s.workouts.filter((w) => { const d = diffDays(today, w.date); return d >= 0 && d < 3; }).length;
+    const yesterdayCount = s.workouts.filter((w) => w.completed !== false && diffDays(today, w.date) === 1).length;
+    const recent3 = s.workouts.filter((w) => { if (w.completed === false) return false; const d = diffDays(today, w.date); return d >= 0 && d < 3; }).length;
     if (!done && h >= 17 && f.activeDays < f.goal) out.push({ id: `workout:${today}`, tone: 'warn', title: 'No workout yet', text: `${f.activeDays}/${f.goal} workouts this week. Even 20 minutes counts.`, href: '/fitness' });
     if (recent3 >= 3 || (yesterdayCount > 0 && recent3 >= 3)) out.push({ id: `rest:${today}`, tone: 'info', title: 'Rest-day reminder', text: 'Three active days in a row. Consider stretching or a rest day for recovery.', href: '/fitness' });
   }

@@ -129,11 +129,12 @@ export function waterScore(s: Snapshot, day: string): number | null {
 
 // ---------------------------------------------------------------- fitness
 
-export const workoutsOn = (s: Snapshot, day: string) => s.workouts.filter((w) => w.date === day);
+const doneW = (s: Snapshot) => s.workouts.filter((w) => w.completed !== false);
+export const workoutsOn = (s: Snapshot, day: string) => doneW(s).filter((w) => w.date === day);
 
 export function weeklyFitness(s: Snapshot, day: string) {
   const days = weekDays(day);
-  const list = s.workouts.filter((w) => inRange(w.date, days[0], days[6]));
+  const list = doneW(s).filter((w) => inRange(w.date, days[0], days[6]));
   const activeDays = new Set(list.map((w) => w.date)).size;
   const minutes = sum(list.map((w) => w.durationMin));
   const calories = sum(list.map((w) => w.calories ?? 0));
@@ -150,7 +151,7 @@ export function weeklyFitness(s: Snapshot, day: string) {
 
 /** Consecutive days (ending today/yesterday) that contain a workout; rest days are allowed once per 3 days. */
 export function workoutStreak(s: Snapshot, today: string): number {
-  const dates = new Set(s.workouts.map((w) => w.date));
+  const dates = new Set(doneW(s).map((w) => w.date));
   let d = dates.has(today) ? today : addDays(today, -1);
   let streak = 0;
   let restRun = 0;
@@ -464,7 +465,7 @@ export function periodReport(s: Snapshot, kind: 'week' | 'month', today: string)
   const sleepVals = days.map((d) => sleepScore(s, d)).filter((x): x is number => x != null);
   const foodVals = days.map((d) => foodScore(s, d)).filter((x): x is number => x != null);
   const wk = weeklyFitness(s, to);
-  const workouts = s.workouts.filter((w) => inRange(w.date, from, to));
+  const workouts = doneW(s).filter((w) => inRange(w.date, from, to));
   const m = monthMoney(s, to);
   const periodSpent = spentInRange(s, from, to);
   const periodIncome = sum(s.transactions.filter((t) => t.type === 'income' && inRange(t.date, from, to)).map((t) => t.amount));

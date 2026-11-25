@@ -46,12 +46,12 @@ export default function FitnessPage() {
     const f = weeklyFitness(s, today);
     const w = weightProgress(s);
     const steps = s.dailyLogs.find((l) => l.date === today)?.steps ?? 0;
-    const week = weekDays(today).map((x) => ({ label: dayName(x), day: x, minutes: s.workouts.filter((y) => y.date === x).reduce((a, y) => a + y.durationMin, 0), calories: s.workouts.filter((y) => y.date === x).reduce((a, y) => a + (y.calories ?? 0), 0) }));
+    const week = weekDays(today).map((x) => ({ label: dayName(x), day: x, minutes: s.workouts.filter((y) => y.completed !== false && y.date === x).reduce((a, y) => a + y.durationMin, 0), calories: s.workouts.filter((y) => y.completed !== false && y.date === x).reduce((a, y) => a + (y.calories ?? 0), 0) }));
     const recent = [...s.workouts].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 30);
     const weights = s.bodyEntries.filter((b) => b.weightKg != null).map((b) => ({ label: shortDate(b.date), Weight: b.weightKg }));
     const measures = s.bodyEntries.map((b) => ({ label: shortDate(b.date), Chest: b.chest, Waist: b.waist, Arms: b.arms, Thighs: b.thighs }));
     const streak = workoutStreak(s, today);
-    const lastThree = [0, 1, 2].map((n) => s.workouts.some((y) => y.date === shiftBack(today, n)));
+    const lastThree = [0, 1, 2].map((n) => s.workouts.some((y) => y.completed !== false && y.date === shiftBack(today, n)));
     return { f, w, steps, week, recent, weights, measures, streak, score: fitnessScore(s, today), todayList: workoutsOn(s, today), needsRest: lastThree.every(Boolean) };
   }, [s, today]);
 
@@ -188,9 +188,10 @@ export default function FitnessPage() {
             {d.recent.map((w) => (
               <li key={w.id} className="rounded-xl bg-muted/60 px-3.5 py-3">
                 <div className="flex items-center gap-3">
+                  <input type="checkbox" aria-label="Workout completed" checked={w.completed !== false} onChange={() => wk.update(w.id, { completed: w.completed === false })} className="h-5 w-5 shrink-0 accent-[#22c55e]" />
                   <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-fit/15 text-fit"><Dumbbell size={18} /></span>
-                  <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{w.name || w.type}</p>
-                    <p className="text-xs text-muted-foreground">{w.date === today ? 'Today' : shortDate(w.date)} · {w.type} · {w.durationMin} min{w.calories ? ` · ${w.calories} kcal` : ''}</p></div>
+                  <div className="min-w-0 flex-1"><p className={`truncate text-sm font-semibold ${w.completed === false ? 'text-muted-foreground line-through' : ''}`}>{w.name || w.type}</p>
+                    <p className="text-xs text-muted-foreground">{w.date === today ? 'Today' : shortDate(w.date)} · {w.type} · {w.durationMin} min{w.calories ? ` · ${w.calories} kcal` : ''} · {w.completed === false ? 'Not completed' : 'Completed'}</p></div>
                   <button aria-label="Edit workout" onClick={() => setEditW(w)} className="rounded-lg p-2 text-muted-foreground hover:bg-card"><Pencil size={15} /></button>
                   <button aria-label="Delete workout" onClick={() => setDelW(w)} className="rounded-lg p-2 text-muted-foreground hover:bg-danger/10 hover:text-danger"><Trash2 size={15} /></button>
                 </div>

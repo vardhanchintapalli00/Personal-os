@@ -57,7 +57,7 @@ export default function HomePage() {
       bestHabit: s.habits.map((h) => ({ h, n: habitStreak(s, h.id, today) })).sort((a, b) => b.n - a.n)[0],
       wStreak: workoutStreak(s, today),
       weekTasks: week.map((x) => ({ label: dayName(x).slice(0, 1), day: x, value: taskStatsForDay(s, x).pct ?? 0, has: taskStatsForDay(s, x).total > 0 })),
-      weekWork: week.map((x) => ({ label: dayName(x).slice(0, 1), day: x, value: s.workouts.filter((w) => w.date === x).reduce((a, w) => a + w.durationMin, 0) })),
+      weekWork: week.map((x) => ({ label: dayName(x).slice(0, 1), day: x, value: s.workouts.filter((w) => w.completed !== false && w.date === x).reduce((a, w) => a + w.durationMin, 0) })),
       weekFood: week.map((x) => ({ label: dayName(x).slice(0, 1), day: x, value: foodScore(s, x) })),
       monthSpend: monthDays(today).filter((x) => x <= today).map((x) => ({ label: String(Number(x.slice(8))), day: x, value: spentOn(s, x) })),
     };

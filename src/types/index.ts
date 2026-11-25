@@ -30,7 +30,7 @@ export interface DailyLog {
 export interface Exercise { name: string; sets: number; reps: number; weightKg: number }
 export interface Workout {
   id: string; date: string; type: string; name: string | null; durationMin: number; calories: number | null;
-  exercises: Exercise[]; notes: string | null;
+  exercises: Exercise[]; notes: string | null; completed: boolean;
 }
 export interface BodyEntry {
   id: string; date: string; weightKg: number | null; chest: number | null; waist: number | null;

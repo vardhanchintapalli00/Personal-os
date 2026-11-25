@@ -81,7 +81,7 @@
 @keyframes splash-in { from { opacity: 0; transform: scale(.6); } to { opacity: 1; transform: scale(1); } }
 @keyframes splash-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
 @keyframes splash-fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-@media (prefers-color-scheme: dark) { html:not(.light) #splash { background: #080a12; color: #f1f5f9; } }
+@media (prefers-color-scheme: dark) { html:not(.light) #splash { background: #0b1020; color: #f1f5f9; } }
 
 /* Page fade-in without 'fill-mode', so it leaves no layer behind that could trap pop-ups under the menus. */
 @keyframes page-in { from { opacity: 0; } to { opacity: 1; } }

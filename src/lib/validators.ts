@@ -70,6 +70,7 @@ export const workoutSchema = z.object({
   name: optText(80),
   durationMin: z.coerce.number().int().min(1, 'Duration must be at least 1 minute').max(600),
   calories: z.coerce.number().int().min(0).max(5000).nullish(),
+  completed: z.boolean().default(true),
   exercises: z
     .array(
       z.object({

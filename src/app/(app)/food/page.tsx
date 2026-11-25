@@ -206,7 +206,7 @@ export default function FoodPage() {
           <div className="-mx-4 flex gap-2 overflow-x-auto px-4 no-scrollbar"><Chip active={!cat} tone="success" onClick={() => setCat('')}>All</Chip>{MEAL_CATEGORIES.map((c) => <Chip key={c} active={cat === c} tone={CAT_TONE[c] === 'danger' ? 'danger' : 'success'} onClick={() => setCat(cat === c ? '' : c)}>{c}</Chip>)}</div>
           {history.length === 0 ? <p className="py-6 text-center text-sm text-muted-foreground">No meals match.</p> : (
             <ul className="max-h-96 space-y-2 overflow-y-auto">{history.slice(0, 80).map((m) => (
-              <li key={m.id} className="flex items-center gap-3 rounded-xl bg-muted/60 px-3 py-2"><span className="w-14 shrink-0 text-[11px] text-muted-foreground">{shortDate(m.date)}</span><span className="min-w-0 flex-1 truncate text-sm">{m.food}</span><Badge tone={CAT_TONE[m.category]}>{m.category}</Badge></li>))}</ul>
+              <li key={m.id} className="flex items-center gap-3 rounded-xl bg-muted/60 px-3 py-2"><span className="w-14 shrink-0 text-[11px] text-muted-foreground">{shortDate(m.date)}</span><span className="min-w-0 flex-1 truncate text-sm">{m.food}</span><Badge tone={CAT_TONE[m.category]}>{m.category}</Badge><button aria-label="Delete meal" onClick={() => setDeleting(m)} className="rounded-lg p-1.5 text-muted-foreground hover:bg-danger/10 hover:text-danger"><Trash2 size={15} /></button></li>))}</ul>
           )}
         </div>
       </Card>
