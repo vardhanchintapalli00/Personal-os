@@ -84,6 +84,23 @@ export function Providers({ children }: { children: ReactNode }) {
     return () => { window.removeEventListener('online', sync); window.removeEventListener('lifeos:synced', done); };
   }, [client]);
 
+  // Refresh the data when a notification button changed something, and when you come back to the app after a short break.
+  useEffect(() => {
+    const refresh = () => client.invalidateQueries({ queryKey: ['snapshot'] });
+    const onMessage = (e: MessageEvent) => { if (e.data?.type === 'lifeos:refresh') refresh(); };
+    let hiddenAt = 0;
+    const onVisible = () => {
+      if (document.visibilityState === 'hidden') hiddenAt = Date.now();
+      else if (hiddenAt && Date.now() - hiddenAt > 15_000) refresh();
+    };
+    navigator.serviceWorker?.addEventListener('message', onMessage);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      navigator.serviceWorker?.removeEventListener('message', onMessage);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [client]);
+
   // Offline support: register the service worker (production only).
   useEffect(() => {
     if (process.env.NODE_ENV === 'production' && 'serviceWorker' in navigator) {

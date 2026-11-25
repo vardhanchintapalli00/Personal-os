@@ -87,6 +87,7 @@ const JSON_HEADERS = { 'Content-Type': 'application/json' };
 self.addEventListener('notificationclick', (event) => {
   const d = event.notification.data || {};
   event.notification.close();
+  const tellApp = async () => { const all = await clients.matchAll({ type: 'window', includeUncontrolled: true }); all.forEach((c) => c.postMessage({ type: 'lifeos:refresh' })); };
   const show = (title, body) => self.registration.showNotification(title, { body, tag: d.tag || undefined, icon: '/pwa-icon?size=192', badge: '/pwa-icon?size=192' });
 
   event.waitUntil(
@@ -101,13 +102,14 @@ self.addEventListener('notificationclick', (event) => {
             const res = await fetch('/api/push/action', { method: 'POST', headers: JSON_HEADERS, credentials: 'same-origin', body: JSON.stringify({ kind: 'water' }) });
             if (res.ok) {
               const out = await res.json();
+              await tellApp();
               await show('✅ Water logged', `Water today: ${out.water}/${out.goal} glasses ${out.water >= out.goal ? '✅' : '❌'}`);
               return;
             }
           } else if (d.kind === 'task' && d.taskId) {
             const today = new Date(Date.now() + 19800000).toISOString().slice(0, 10);
             const res = await fetch('/api/tasks/' + d.taskId, { method: 'PATCH', headers: JSON_HEADERS, credentials: 'same-origin', body: JSON.stringify({ status: 'Completed', completedOn: today, progress: 100 }) });
-            if (res.ok) { await show('✅ Task completed', d.taskTitle || 'Great job!'); return; }
+            if (res.ok) { await tellApp(); await show('✅ Task completed', d.taskTitle || 'Great job!'); return; }
           }
         } catch (e) { /* fall through and open the app */ }
       }

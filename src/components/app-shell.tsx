@@ -128,7 +128,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </header>
 
       <main className="mx-auto w-full max-w-6xl px-4 pb-28 pt-5 lg:px-8 lg:pb-12">
-        {isLoading ? <PageSkeleton /> : !s ? <ErrorState message={(error as Error)?.message} retry={() => refetch()} /> : <div key={path} className="animate-fade-in">{children}</div>}
+        {isLoading ? <PageSkeleton /> : !s ? <ErrorState message={(error as Error)?.message} retry={() => refetch()} /> : <div key={path} className="page-enter">{children}</div>}
       </main>
 
       {/* Mobile bottom navigation */}
